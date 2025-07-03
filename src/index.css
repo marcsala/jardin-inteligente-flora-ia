@@ -43,6 +43,12 @@ All colors MUST be HSL.
     --floral-pink: 330 60% 70%;
     --floral-purple: 280 50% 65%;
     --floral-yellow: 45 90% 75%;
+    
+    /* Lunar phases colors */
+    --lunar-new: 220 20% 20%;
+    --lunar-crescent: 130 50% 50%;
+    --lunar-full: 45 90% 75%;
+    --lunar-waning: 25 30% 45%;
 
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;

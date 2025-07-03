@@ -66,6 +66,12 @@ export default {
 					purple: 'hsl(var(--floral-purple))',
 					yellow: 'hsl(var(--floral-yellow))'
 				},
+				lunar: {
+					new: 'hsl(var(--lunar-new))',
+					crescent: 'hsl(var(--lunar-crescent))',
+					full: 'hsl(var(--lunar-full))',
+					waning: 'hsl(var(--lunar-waning))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',

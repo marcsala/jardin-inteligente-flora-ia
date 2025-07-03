@@ -6,6 +6,7 @@ import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { BancalGrid } from "@/components/bancales/BancalGrid";
 import { RiegoPanel } from "@/components/riego/RiegoPanel";
 import { ClimaWidget } from "@/components/clima/ClimaWidget";
+import { LunarCalendar } from "@/components/calendario/LunarCalendar";
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -19,12 +20,7 @@ const Index = () => {
       case "clima":
         return <ClimaWidget />;
       case "calendario":
-        return (
-          <div className="text-center py-20">
-            <h2 className="text-2xl font-serif font-semibold mb-4">Calendario de Jardín</h2>
-            <p className="text-muted-foreground">Próximamente - Calendario inteligente con fases lunares</p>
-          </div>
-        );
+        return <LunarCalendar />;
       case "inventario":
         return (
           <div className="text-center py-20">
