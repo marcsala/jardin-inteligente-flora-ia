@@ -7,6 +7,7 @@ import { BancalGrid } from "@/components/bancales/BancalGrid";
 import { RiegoPanel } from "@/components/riego/RiegoPanel";
 import { ClimaWidget } from "@/components/clima/ClimaWidget";
 import { LunarCalendar } from "@/components/calendario/LunarCalendar";
+import { InventoryKanban } from "@/components/inventario/InventoryKanban";
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -22,12 +23,7 @@ const Index = () => {
       case "calendario":
         return <LunarCalendar />;
       case "inventario":
-        return (
-          <div className="text-center py-20">
-            <h2 className="text-2xl font-serif font-semibold mb-4">Inventario Floral</h2>
-            <p className="text-muted-foreground">Próximamente - Gestión visual tipo Kanban</p>
-          </div>
-        );
+        return <InventoryKanban />;
       default:
         return (
           <div className="space-y-8">
