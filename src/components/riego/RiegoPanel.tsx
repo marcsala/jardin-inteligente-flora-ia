@@ -1,171 +1,255 @@
+import { useState } from 'react';
+import { PlantWithRiego } from '@/types/riego';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Droplets, 
-  Play, 
-  Pause,
-  Clock,
-  Zap,
-  Settings,
-  WifiOff,
-  Wifi
+  Plus,
+  Calendar,
+  AlertTriangle,
+  Settings
 } from "lucide-react";
-
-const zonas = [
-  {
-    id: 1,
-    name: "Zona A - Rosas",
-    activo: true,
-    programado: "06:00 - 18:00",
-    ultimoRiego: "Hace 2h",
-    duracion: "15 min",
-    presion: 85,
-    estado: "online"
-  },
-  {
-    id: 2,
-    name: "Zona B - Aromáticas", 
-    activo: false,
-    programado: "07:00 - 19:00",
-    ultimoRiego: "Hace 1d",
-    duracion: "10 min",
-    presion: 78,
-    estado: "online"
-  },
-  {
-    id: 3,
-    name: "Zona C - Temporada",
-    activo: true,
-    programado: "06:30 - 17:30",
-    ultimoRiego: "Hace 4h",
-    duracion: "20 min",
-    presion: 92,
-    estado: "offline"
-  },
-  {
-    id: 4,
-    name: "Zona D - Sombreada",
-    activo: false,
-    programado: "08:00 - 16:00", 
-    ultimoRiego: "Hace 6h",
-    duracion: "12 min",
-    presion: 88,
-    estado: "online"
-  }
-];
+import { useRiego } from '@/hooks/useRiego';
+import { useToast } from '@/hooks/use-toast';
+import { PlantWateringCard } from './PlantWateringCard';
+import { RiegoCalendar } from './RiegoCalendar';
+import { RiegoHistory } from './RiegoHistory';
+import { WateringScheduleForm } from './WateringScheduleForm';
 
 export function RiegoPanel() {
+  const { 
+    getPlantsWithRiego, 
+    getPlantsPendientesRiego, 
+    getPlantsRiegoHoy,
+    registrarRiego,
+    crearSchedule,
+    getRegistrosByPlant,
+    loading 
+  } = useRiego();
+  
+  const { toast } = useToast();
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [scheduleFormOpen, setScheduleFormOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [selectedPlant, setSelectedPlant] = useState<PlantWithRiego>();
+
+  const allPlants = getPlantsWithRiego();
+  const plantsPendientes = getPlantsPendientesRiego();
+  const plantsHoy = getPlantsRiegoHoy();
+
+  const handleRegar = (plantId: string, cantidad: 'poca' | 'moderada' | 'abundante') => {
+    registrarRiego(plantId, cantidad, 'Riego registrado desde el panel');
+    const plant = allPlants.find(p => p.id === plantId);
+    toast({
+      title: "Riego registrado",
+      description: `${plant?.nombre} ha sido regada con cantidad ${cantidad}`,
+    });
+  };
+
+  const handleEditSchedule = (plant: PlantWithRiego) => {
+    setSelectedPlant(plant);
+    setScheduleFormOpen(true);
+  };
+
+  const handleViewHistory = (plant: PlantWithRiego) => {
+    setSelectedPlant(plant);
+    setHistoryOpen(true);
+  };
+
+  const handleSaveSchedule = (data: any) => {
+    crearSchedule(data);
+    toast({
+      title: "Programación guardada",
+      description: "La programación de riego ha sido configurada",
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center space-y-2">
+          <Droplets className="h-8 w-8 animate-pulse text-accent mx-auto" />
+          <p className="text-muted-foreground">Cargando sistema de riego...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-serif font-semibold">Sistema de Riego</h2>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Settings className="h-4 w-4 mr-2" />
-            Configurar
-          </Button>
-          <Button className="bg-gradient-primary shadow-nature">
-            <Zap className="h-4 w-4 mr-2" />
-            Riego Manual
-          </Button>
-        </div>
+        <h2 className="text-2xl font-serif font-semibold">Panel de Riego</h2>
+        <Button 
+          className="bg-gradient-primary shadow-nature"
+          onClick={() => {
+            setSelectedPlant(undefined);
+            setScheduleFormOpen(true);
+          }}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Nueva Programación
+        </Button>
       </div>
 
-      {/* Estado general */}
-      <Card className="bg-gradient-to-r from-accent/5 to-primary/5 border-accent/20">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-2">
-              <h3 className="font-semibold text-lg">Estado del Sistema</h3>
-              <div className="flex items-center gap-4">
-                <Badge className="bg-accent/10 text-accent border-accent/20">
-                  3 Zonas Activas
-                </Badge>
-                <Badge className="bg-floral-yellow/10 text-floral-yellow border-floral-yellow/20">
-                  1 Zona Offline
-                </Badge>
+      {/* Resumen general */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="bg-gradient-to-r from-accent/5 to-primary/5 border-accent/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+                <Droplets className="h-5 w-5 text-accent" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-accent">{allPlants.length}</div>
+                <div className="text-sm text-muted-foreground">Plantas con riego</div>
               </div>
             </div>
-            <div className="text-right space-y-1">
-              <div className="text-2xl font-bold text-accent">15L/h</div>
-              <div className="text-sm text-muted-foreground">Consumo actual</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Zonas de riego */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {zonas.map((zona) => (
-          <Card key={zona.id} className="hover:shadow-nature transition-all duration-200">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <Droplets className={`h-6 w-6 ${zona.activo ? 'text-accent animate-pulse' : 'text-muted-foreground'}`} />
-                    {zona.estado === "online" ? (
-                      <Wifi className="h-3 w-3 text-accent absolute -top-1 -right-1" />
-                    ) : (
-                      <WifiOff className="h-3 w-3 text-destructive absolute -top-1 -right-1" />
-                    )}
-                  </div>
-                  <div>
-                    <CardTitle className="text-base">{zona.name}</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      {zona.estado === "online" ? "Conectado" : "Sin conexión"}
-                    </p>
-                  </div>
-                </div>
-                <Switch checked={zona.activo} />
+        <Card className="bg-gradient-to-r from-floral-yellow/5 to-floral-yellow/10 border-floral-yellow/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-floral-yellow/20 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-floral-yellow" />
               </div>
-            </CardHeader>
+              <div>
+                <div className="text-2xl font-bold text-floral-yellow">{plantsPendientes.length}</div>
+                <div className="text-sm text-muted-foreground">Necesitan riego</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Presión del sistema</span>
-                  <span className="font-medium">{zona.presion} PSI</span>
-                </div>
-                <Progress 
-                  value={zona.presion} 
-                  className="h-2"
+        <Card className="bg-gradient-to-r from-primary/5 to-primary-glow/10 border-primary/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                <Calendar className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-primary">{plantsHoy.length}</div>
+                <div className="text-sm text-muted-foreground">Para hoy</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Contenido principal */}
+      <Tabs defaultValue="pendientes" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="pendientes" className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Pendientes ({plantsPendientes.length})
+          </TabsTrigger>
+          <TabsTrigger value="calendario" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Calendario
+          </TabsTrigger>
+          <TabsTrigger value="todas" className="flex items-center gap-2">
+            <Droplets className="h-4 w-4" />
+            Todas ({allPlants.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pendientes" className="space-y-4">
+          {plantsPendientes.length > 0 ? (
+            <>
+              <div className="flex items-center gap-2 mb-4">
+                <AlertTriangle className="h-5 w-5 text-floral-yellow" />
+                <h3 className="font-medium">Plantas que necesitan riego</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {plantsPendientes.map(plant => (
+                  <PlantWateringCard
+                    key={plant.id}
+                    plant={plant}
+                    onRegar={handleRegar}
+                    onEditSchedule={handleEditSchedule}
+                    onViewHistory={handleViewHistory}
+                  />
+                ))}
+              </div>
+            </>
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Droplets className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="text-muted-foreground mb-2">¡Todas las plantas están al día!</p>
+                <p className="text-sm text-muted-foreground">No hay plantas que necesiten riego por el momento</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="calendario" className="space-y-4">
+          <RiegoCalendar
+            plants={allPlants}
+            onSelectDate={setSelectedDate}
+            selectedDate={selectedDate}
+          />
+        </TabsContent>
+
+        <TabsContent value="todas" className="space-y-4">
+          {allPlants.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {allPlants.map(plant => (
+                <PlantWateringCard
+                  key={plant.id}
+                  plant={plant}
+                  onRegar={handleRegar}
+                  onEditSchedule={handleEditSchedule}
+                  onViewHistory={handleViewHistory}
                 />
-              </div>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Settings className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="text-muted-foreground mb-2">No hay plantas configuradas</p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Configura programaciones de riego para tus plantas del inventario
+                </p>
+                <Button 
+                  onClick={() => {
+                    setSelectedPlant(undefined);
+                    setScheduleFormOpen(true);
+                  }}
+                  className="bg-gradient-primary shadow-nature"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Crear Primera Programación
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    Programado
-                  </div>
-                  <p className="text-sm font-medium">{zona.programado}</p>
-                </div>
-                <div className="space-y-1">
-                  <div className="text-sm text-muted-foreground">Duración</div>
-                  <p className="text-sm font-medium">{zona.duracion}</p>
-                </div>
-              </div>
+      {/* Modales */}
+      <WateringScheduleForm
+        plant={selectedPlant}
+        open={scheduleFormOpen}
+        onClose={() => {
+          setScheduleFormOpen(false);
+          setSelectedPlant(undefined);
+        }}
+        onSave={handleSaveSchedule}
+      />
 
-              <div className="flex items-center justify-between pt-2 border-t">
-                <span className="text-sm text-muted-foreground">
-                  Último riego: {zona.ultimoRiego}
-                </span>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline">
-                    <Play className="h-3 w-3" />
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <Pause className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <RiegoHistory
+        plant={selectedPlant}
+        registros={selectedPlant ? getRegistrosByPlant(selectedPlant.id) : []}
+        open={historyOpen}
+        onClose={() => {
+          setHistoryOpen(false);
+          setSelectedPlant(undefined);
+        }}
+      />
     </div>
   );
 }
