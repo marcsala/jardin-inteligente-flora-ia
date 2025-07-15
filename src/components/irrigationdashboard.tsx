@@ -12,10 +12,13 @@ import {
   Calendar,
   Droplets,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  BarChart3
 } from 'lucide-react';
 import { useIrrigationAPI } from './useIrrigationAPI';
 import { ZoneCard } from './ZoneCard';
+import { ScheduleModal } from './ScheduleModal';
+import { StatsModal } from './StatsModal';
 
 export const IrrigationDashboard: React.FC = () => {
   const {
@@ -32,6 +35,16 @@ export const IrrigationDashboard: React.FC = () => {
   } = useIrrigationAPI();
 
   const [refreshing, setRefreshing] = useState(false);
+  const [scheduleModal, setScheduleModal] = useState<{
+    isOpen: boolean;
+    zoneId: number;
+    zoneName: string;
+  }>({
+    isOpen: false,
+    zoneId: 0,
+    zoneName: ''
+  });
+  const [statsModal, setStatsModal] = useState(false);
 
   // Manejar actualización manual
   const handleRefresh = async () => {
@@ -80,15 +93,23 @@ export const IrrigationDashboard: React.FC = () => {
     }
   };
 
-  // Funciones placeholder para editar y programar
+  // Funciones para modales
   const handleEditZone = (zoneId: number) => {
     console.log(`Editar zona ${zoneId}`);
     // Aquí abrirías un modal para editar la zona
   };
 
   const handleScheduleZone = (zoneId: number) => {
-    console.log(`Programar zona ${zoneId}`);
-    // Aquí abrirías un modal para programar horarios
+    const zone = zones.find(z => z.id === zoneId);
+    setScheduleModal({
+      isOpen: true,
+      zoneId,
+      zoneName: zone?.name || `Zona ${zoneId + 1}`
+    });
+  };
+
+  const closeScheduleModal = () => {
+    setScheduleModal(prev => ({ ...prev, isOpen: false }));
   };
 
   // Calcular estadísticas
@@ -222,20 +243,31 @@ export const IrrigationDashboard: React.FC = () => {
       </Card>
 
       {/* Controles Globales */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            onClick={handleStopAll}
+            variant="destructive"
+            disabled={loading || activeZones === 0}
+          >
+            Detener Todo el Riego
+          </Button>
+          
+          {activeZones > 0 && (
+            <Badge variant="outline" className="text-blue-600">
+              {activeZones} zona{activeZones !== 1 ? 's' : ''} regando actualmente
+            </Badge>
+          )}
+        </div>
+
         <Button
-          onClick={handleStopAll}
-          variant="destructive"
-          disabled={loading || activeZones === 0}
+          onClick={() => setStatsModal(true)}
+          variant="outline"
+          className="flex items-center gap-2"
         >
-          Detener Todo el Riego
+          <BarChart3 className="w-4 h-4" />
+          Ver Estadísticas
         </Button>
-        
-        {activeZones > 0 && (
-          <Badge variant="outline" className="text-blue-600">
-            {activeZones} zona{activeZones !== 1 ? 's' : ''} regando actualmente
-          </Badge>
-        )}
       </div>
 
       {/* Grid de Zonas */}
@@ -262,6 +294,19 @@ export const IrrigationDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modales */}
+      <ScheduleModal
+        isOpen={scheduleModal.isOpen}
+        onClose={closeScheduleModal}
+        zoneId={scheduleModal.zoneId}
+        zoneName={scheduleModal.zoneName}
+      />
+
+      <StatsModal
+        isOpen={statsModal}
+        onClose={() => setStatsModal(false)}
+      />
     </div>
   );
 };
