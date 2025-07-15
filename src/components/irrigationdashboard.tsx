@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,9 +16,9 @@ import {
   BarChart3
 } from 'lucide-react';
 import { useIrrigationAPI } from './useIrrigationAPI';
-import { ZoneCard } from './ZoneCard';
-import { ScheduleModal } from './ScheduleModal';
-import { StatsModal } from './StatsModal';
+import { ZoneCard } from './zonecard';
+import { ScheduleModal } from './schedulemodal';
+import { StatsModal } from './statsmodal';
 
 export const IrrigationDashboard: React.FC = () => {
   const {
